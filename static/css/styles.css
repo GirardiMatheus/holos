@@ -1,0 +1,262 @@
+/* styles.css */
+body {
+  font-family: 'Roboto', sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f9f9f9;
+  color: #3F1717; 
+}
+
+header {
+  background-color: #950606; 
+  color: white;
+  padding: 20px;
+  text-align: center;
+  font-size: 24px;
+  font-weight: 500;
+}
+
+.tabs {
+  display: flex;
+  justify-content: center;
+  background-color: #950606; 
+  padding: 10px;
+}
+
+.tablink {
+  background-color: transparent;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+.tablink:hover {
+  background-color: #3F1717; 
+}
+
+.tabcontent {
+  display: none;
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+h2 {
+  color: #950606; 
+  margin-bottom: 20px;
+}
+
+form {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 500;
+  color: #3F1717; 
+}
+
+input[type="text"],
+input[type="number"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #FFB4B4; 
+  border-radius: 4px;
+  font-size: 16px;
+  color: #3F1717; 
+}
+
+button[type="submit"] {
+  background-color: #950606; 
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 16px;
+  transition: background-color 0.3s;
+}
+
+button[type="submit"]:hover {
+  background-color: #3F1717; 
+}
+
+.card-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.card {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: calc(33.333% - 20px); 
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  border: 1px solid #FFB4B4; 
+  box-sizing: border-box; 
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 18px;
+  color: #950606; 
+}
+
+.card p {
+  margin: 10px 0;
+  font-size: 16px;
+  color: #3F1717; 
+}
+
+.card button {
+  background-color: #950606; 
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  margin: 5px;
+  transition: background-color 0.3s;
+}
+
+.card button:hover {
+  background-color: #3F1717; 
+}
+
+.mensagem {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  background-color: #950606; 
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+}
+
+input[type="text"][id^="pesquisa"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #FFB4B4; 
+  border-radius: 4px;
+  font-size: 16px;
+  color: #3F1717; 
+  box-sizing: border-box;
+}
+
+input[type="text"][id^="pesquisa"]::placeholder {
+  color: #FF8A8A; 
+}
+
+.lista-exames-container {
+  max-height: 300px; 
+  overflow-y: auto; 
+  border: 1px solid #FFB4B4; 
+  border-radius: 8px; 
+  padding: 10px; 
+  background-color: white; 
+  margin-bottom: 20px; 
+}
+
+.lista-exames-container::-webkit-scrollbar {
+  width: 8px; 
+}
+
+.lista-exames-container::-webkit-scrollbar-track {
+  background: #f1f1f1; 
+  border-radius: 4px;
+}
+
+.lista-exames-container::-webkit-scrollbar-thumb {
+  background: #950606;
+  border-radius: 4px;
+}
+
+.lista-exames-container::-webkit-scrollbar-thumb:hover {
+  background: #3F1717; 
+}
+
+
+@media (max-width: 768px) {
+  .card {
+    width: calc(50% - 20px); 
+  }
+
+  .tablink {
+    padding: 10px 15px; 
+    font-size: 14px;
+  }
+
+  h2 {
+    font-size: 20px; 
+  }
+
+  input[type="text"],
+  input[type="number"] {
+    font-size: 14px; 
+  }
+
+  button[type="submit"] {
+    padding: 8px 16px; 
+    font-size: 14px;
+  }
+}
+
+@media (max-width: 480px) {
+  .card {
+    width: 100%; 
+  }
+
+  .tablink {
+    padding: 8px 12px; 
+    font-size: 12px;
+  }
+
+  h2 {
+    font-size: 18px; 
+  }
+
+  input[type="text"],
+  input[type="number"] {
+    font-size: 12px; 
+  }
+
+  button[type="submit"] {
+    padding: 6px 12px; 
+    font-size: 12px;
+  }
+
+  .card h3 {
+    font-size: 16px; 
+  }
+
+  .card p {
+    font-size: 14px; 
+  }
+
+  .card button {
+    padding: 6px 12px; 
+    font-size: 12px;
+  }
+
+  .mensagem {
+    font-size: 12px; 
+    padding: 8px 16px;
+  }
+}
