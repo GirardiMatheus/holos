@@ -20,10 +20,15 @@
     </div>
 
     <div id="exames" class="tabcontent">
-      <h2>Exames Disponíveis</h2>
-      <input type="text" id="pesquisa-exames" placeholder="Pesquisar exame..." oninput="filtrarExames()">
-      <div id="lista-exames" class="card-container"></div>
-  </div>
+        <h2>Exames Disponíveis</h2>
+        <div class="acoes-csv">
+            <button onclick="exportarCSV()">Exportar CSV</button>
+            <button onclick="document.getElementById('importar-csv').click()">Importar CSV</button>
+            <input type="file" id="importar-csv" accept=".csv" style="display: none;" onchange="importarCSV(event)">
+        </div>
+        <input type="text" id="pesquisa-exames" placeholder="Pesquisar exame..." oninput="filtrarExames()">
+        <div id="lista-exames" class="card-container"></div>
+    </div>
 
     <div id="cadastros" class="tabcontent">
         <h2>Cadastrar Novo Exame</h2>

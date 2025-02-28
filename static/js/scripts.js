@@ -199,3 +199,46 @@ function mostrarMensagem(mensagem, tipo = 'success') {
     document.body.appendChild(mensagemDiv);
     setTimeout(() => mensagemDiv.remove(), 3000);
 }
+
+function exportarCSV() {
+    fetch('/exportar_csv')
+        .then(response => response.blob())
+        .then(blob => {
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'exames.csv';
+            a.click();
+            mostrarMensagem('CSV exportado com sucesso!');
+        })
+        .catch(error => {
+            console.error('Erro ao exportar CSV:', error);
+            mostrarMensagem('Erro ao exportar CSV.', 'error');
+        });
+}
+
+function importarCSV(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    const formData = new FormData();
+    formData.append('file', file);
+
+    fetch('/importar_csv', {
+        method: 'POST',
+        body: formData,
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            mostrarMensagem('CSV importado com sucesso!');
+            carregarExames(); 
+        } else {
+            mostrarMensagem('Erro ao importar CSV.', 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Erro ao importar CSV:', error);
+        mostrarMensagem('Erro ao importar CSV.', 'error');
+    });
+}

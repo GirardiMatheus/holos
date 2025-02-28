@@ -137,60 +137,113 @@ def gerar_orcamento():
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_font("Arial", size=12)
+    pdf.set_auto_page_break(auto=True, margin=15)  
 
-    pdf.set_font("Arial", 'B', 16)
+    pdf.set_margins(left=10, top=10, right=10)  
+    pdf.set_font("Arial", size=8)  
+
+    pdf.set_font("Arial", 'B', 12)  
     pdf.set_text_color(149, 6, 6) 
-    pdf.cell(200, 10, txt="LABORATÓRIO HOLOS", ln=True, align='C')
-    pdf.set_font("Arial", size=12)
+    pdf.cell(0, 6, txt="LABORATÓRIO HOLOS", ln=True, align='C')
+    pdf.set_font("Arial", size=8)
     pdf.set_text_color(63, 23, 23)  
-    pdf.cell(200, 10, txt="Saúde Ocupacional", ln=True, align='C')
-    pdf.ln(10)
+    pdf.cell(0, 5, txt="Saúde Ocupacional", ln=True, align='C')
+    pdf.ln(5) 
 
-    pdf.set_font("Arial", 'B', 14)
+    pdf.set_font("Arial", 'B', 10)  
     pdf.set_text_color(149, 6, 6) 
-    pdf.cell(200, 10, txt="ORÇAMENTO", ln=True, align='C')
-    pdf.ln(10)
+    pdf.cell(0, 6, txt="ORÇAMENTO", ln=True, align='C')
+    pdf.ln(5)
 
-    pdf.set_font("Arial", size=12)
+    pdf.set_font("Arial", size=8)
     pdf.set_text_color(63, 23, 23)  
-    pdf.cell(200, 10, txt=f"COLABORADOR: {cliente}", ln=True, align='L')
-    pdf.cell(200, 10, txt=f"CPF: {cpf}", ln=True, align='L')
-    pdf.cell(200, 10, txt=f"ORÇAMENTO REALIZADO NO DIA: {data_formatada}", ln=True, align='L')
-    pdf.cell(200, 10, txt=f"VÁLIDO ATÉ O DIA: {data_validade_formatada}", ln=True, align='L')
-    pdf.ln(10)
+    pdf.cell(0, 5, txt=f"COLABORADOR: {cliente}", ln=True, align='L')
+    pdf.cell(0, 5, txt=f"CPF: {cpf} | DATA: {data_formatada} | VÁLIDO ATÉ: {data_validade_formatada}", ln=True, align='L')
+    pdf.ln(5)
 
-    pdf.set_font("Arial", 'B', 12)
+    pdf.set_font("Arial", 'B', 8)
     pdf.set_text_color(149, 6, 6)  
-    pdf.cell(95, 10, txt="Exames", border=1, align='C')
-    pdf.cell(95, 10, txt="Total da linha", border=1, align='C', ln=True)
-    pdf.set_font("Arial", size=12)
+    pdf.cell(140, 6, txt="Exames", border=1, align='C')
+    pdf.cell(40, 6, txt="Valor", border=1, align='C', ln=True)
+    pdf.set_font("Arial", size=8)
     pdf.set_text_color(63, 23, 23)  
 
     total = 0
     for exame in exames_selecionados:
-        pdf.cell(95, 10, txt=exame['nome'], border=1, align='L')
-        pdf.cell(95, 10, txt=f"R$ {exame['valor']}", border=1, align='C', ln=True)
+        pdf.cell(140, 6, txt=exame['nome'], border=1, align='L')
+        pdf.cell(40, 6, txt=f"R$ {exame['valor']}", border=1, align='C', ln=True)
         total += float(exame['valor'])
 
-    pdf.cell(95, 10, txt="Total", border=1, align='L')
-    pdf.cell(95, 10, txt=f"R$ {total:.2f}", border=1, align='C', ln=True)
-    pdf.ln(10)
+    # 
+    pdf.set_font("Arial", 'B', 8)
+    pdf.cell(140, 6, txt="Total", border=1, align='L')
+    pdf.cell(40, 6, txt=f"R$ {total:.2f}", border=1, align='C', ln=True)
+    pdf.ln(5)
 
-    pdf.set_font("Arial", size=12)
+    pdf.set_y(-30)  
+    pdf.set_font("Arial", size=8)
     pdf.set_text_color(149, 6, 6)  
-    pdf.cell(200, 10, txt="Obrigado pela preferência!", ln=True, align='C')
-    pdf.ln(10)
-    pdf.set_font("Arial", 'I', 10)
+    pdf.cell(0, 5, txt="Obrigado pela preferência!", ln=True, align='C')
+    pdf.ln(3)
+    pdf.set_font("Arial", 'I', 7)  
     pdf.set_text_color(63, 23, 23)  
-    pdf.cell(200, 10, txt="Laboratório Holos", ln=True, align='C')
-    pdf.cell(200, 10, txt="Avenida Doutor Galdino do Valle Filho, N 133, Centro, 28625-010, Nova Friburgo - RJ", ln=True, align='C')
-    pdf.cell(200, 10, txt="(22)9 8837-0724 | @holoservicosmedicos", ln=True, align='C')
+    pdf.cell(0, 4, txt="Laboratório Holos", ln=True, align='C')
+    pdf.cell(0, 4, txt="Avenida Doutor Galdino do Valle Filho, N 133, Centro, 28625-010, Nova Friburgo - RJ", ln=True, align='C')
+    pdf.cell(0, 4, txt="(22)9 8837-0724 | @holoservicosmedicos", ln=True, align='C')
 
+    # Salvar e retornar o PDF
     pdf_output = f"orcamento_{cliente}.pdf"
     pdf.output(pdf_output)
 
     return send_file(pdf_output, as_attachment=True)
+
+from flask import send_file, request
+import csv
+
+@app.route('/exportar_csv')
+@login_required
+def exportar_csv():
+    csv_output = 'exames_exportados.csv'
+    with open(csv_output, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(["Nome", "Valor"])  
+        with open(CSV_FILE, 'r') as original_file:
+            reader = csv.reader(original_file)
+            next(reader) 
+            for row in reader:
+                writer.writerow(row)
+
+    return send_file(csv_output, as_attachment=True)
+
+@app.route('/importar_csv', methods=['POST'])
+@login_required
+def importar_csv():
+    if 'file' not in request.files:
+        return jsonify({"status": "error", "message": "Nenhum arquivo enviado"}), 400
+
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"status": "error", "message": "Nome do arquivo inválido"}), 400
+
+    if not file.filename.endswith('.csv'):
+        return jsonify({"status": "error", "message": "Formato de arquivo inválido"}), 400
+
+    try:
+        exames = []
+        reader = csv.reader(file.read().decode('utf-8').splitlines())
+        next(reader)  
+        for row in reader:
+            exames.append(row)
+
+        with open(CSV_FILE, 'w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow(["Nome", "Valor"])  
+            writer.writerows(exames)
+
+        return jsonify({"status": "success", "message": "CSV importado com sucesso"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)}), 500
+
 
 if __name__ == '__main__':
     PORT = int(os.environ.get("PORT", 5000))

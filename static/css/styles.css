@@ -192,6 +192,26 @@ input[type="text"][id^="pesquisa"]::placeholder {
   background: #3F1717; 
 }
 
+.acoes-csv {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.acoes-csv button {
+  background-color: #950606;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.3s;
+}
+
+.acoes-csv button:hover {
+  background-color: #3F1717;
+}
 
 @media (max-width: 768px) {
   .card {
