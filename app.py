@@ -135,12 +135,30 @@ def gerar_orcamento():
     data_validade = data_atual + timedelta(days=30)
     data_validade_formatada = data_validade.strftime("%d/%m/%Y")
 
-    pdf = FPDF()
+    class PDF(FPDF):
+        def __init__(self):
+            super().__init__()
+            self.footer_height = 25  # Altura reservada para o rodapé
+            
+        def footer(self):
+            # Posiciona o rodapé na parte inferior
+            self.set_y(-self.footer_height + 5)
+            self.set_font("Arial", size=8)
+            self.set_text_color(149, 6, 6)
+            self.cell(0, 5, txt="Obrigado pela preferência!", ln=True, align='C')
+            self.set_font("Arial", 'I', 7)
+            self.set_text_color(63, 23, 23)
+            self.cell(0, 4, txt="Laboratório Holos", ln=True, align='C')
+            self.cell(0, 4, txt="Avenida Doutor Galdino do Valle Filho, N 133, Centro, 28625-010, Nova Friburgo - RJ", ln=True, align='C')
+            self.cell(0, 4, txt="(22)9 8837-0724 | @holoservicosmedicos", ln=True, align='C')
+
+    pdf = PDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_auto_page_break(auto=True, margin=pdf.footer_height)  # Reserva espaço para o rodapé
     pdf.set_margins(left=10, top=10, right=10)
     pdf.set_font("Arial", size=8)
 
+    # Cabeçalho
     pdf.set_font("Arial", 'B', 12)
     pdf.set_text_color(149, 6, 6)
     pdf.cell(0, 6, txt="LABORATÓRIO HOLOS", ln=True, align='C')
@@ -160,6 +178,7 @@ def gerar_orcamento():
     pdf.cell(0, 5, txt=f"CPF: {cpf} | DATA: {data_formatada} | VÁLIDO ATÉ: {data_validade_formatada}", ln=True, align='L')
     pdf.ln(5)
 
+    # Tabela de exames
     pdf.set_font("Arial", 'B', 8)
     pdf.set_text_color(149, 6, 6)
     pdf.cell(140, 6, txt="Exames", border=1, align='C')
@@ -169,6 +188,17 @@ def gerar_orcamento():
 
     total = 0.0
     for exame in exames_selecionados:
+        # Verifica se precisa de nova página antes de adicionar linha
+        if pdf.get_y() + 6 > pdf.page_break_trigger - pdf.footer_height:
+            pdf.add_page()
+            # Repete o cabeçalho da tabela em novas páginas
+            pdf.set_font("Arial", 'B', 8)
+            pdf.set_text_color(149, 6, 6)
+            pdf.cell(140, 6, txt="Exames", border=1, align='C')
+            pdf.cell(40, 6, txt="Valor", border=1, align='C', ln=True)
+            pdf.set_font("Arial", size=8)
+            pdf.set_text_color(63, 23, 23)
+            
         nome = exame['nome']
         valor_str = exame['valor'].replace(',', '.')
         valor_float = float(valor_str)
@@ -177,21 +207,13 @@ def gerar_orcamento():
         pdf.cell(140, 6, txt=nome, border=1, align='L')
         pdf.cell(40, 6, txt=f"R$ {valor_str.replace('.', ',')}", border=1, align='C', ln=True)
 
+    # Linha do total - verifica se precisa de nova página
+    if pdf.get_y() + 6 > pdf.page_break_trigger - pdf.footer_height:
+        pdf.add_page()
     pdf.set_font("Arial", 'B', 8)
     pdf.cell(140, 6, txt="Total", border=1, align='L')
     pdf.cell(40, 6, txt=f"R$ {total:.2f}".replace('.', ','), border=1, align='C', ln=True)
     pdf.ln(5)
-
-    pdf.set_y(-30)
-    pdf.set_font("Arial", size=8)
-    pdf.set_text_color(149, 6, 6)
-    pdf.cell(0, 5, txt="Obrigado pela preferência!", ln=True, align='C')
-    pdf.ln(3)
-    pdf.set_font("Arial", 'I', 7)
-    pdf.set_text_color(63, 23, 23)
-    pdf.cell(0, 4, txt="Laboratório Holos", ln=True, align='C')
-    pdf.cell(0, 4, txt="Avenida Doutor Galdino do Valle Filho, N 133, Centro, 28625-010, Nova Friburgo - RJ", ln=True, align='C')
-    pdf.cell(0, 4, txt="(22)9 8837-0724 | @holoservicosmedicos", ln=True, align='C')
 
     pdf_output = f"orcamento_{cliente}.pdf"
     pdf.output(pdf_output)
