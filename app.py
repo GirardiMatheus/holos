@@ -137,68 +137,68 @@ def gerar_orcamento():
 
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=15)  
+    pdf.set_auto_page_break(auto=True, margin=15)
+    pdf.set_margins(left=10, top=10, right=10)
+    pdf.set_font("Arial", size=8)
 
-    pdf.set_margins(left=10, top=10, right=10)  
-    pdf.set_font("Arial", size=8)  
-
-    pdf.set_font("Arial", 'B', 12)  
-    pdf.set_text_color(149, 6, 6) 
+    pdf.set_font("Arial", 'B', 12)
+    pdf.set_text_color(149, 6, 6)
     pdf.cell(0, 6, txt="LABORATÓRIO HOLOS", ln=True, align='C')
     pdf.set_font("Arial", size=8)
-    pdf.set_text_color(63, 23, 23)  
+    pdf.set_text_color(63, 23, 23)
     pdf.cell(0, 5, txt="Saúde Ocupacional", ln=True, align='C')
-    pdf.ln(5) 
+    pdf.ln(5)
 
-    pdf.set_font("Arial", 'B', 10)  
-    pdf.set_text_color(149, 6, 6) 
+    pdf.set_font("Arial", 'B', 10)
+    pdf.set_text_color(149, 6, 6)
     pdf.cell(0, 6, txt="ORÇAMENTO", ln=True, align='C')
     pdf.ln(5)
 
     pdf.set_font("Arial", size=8)
-    pdf.set_text_color(63, 23, 23)  
+    pdf.set_text_color(63, 23, 23)
     pdf.cell(0, 5, txt=f"COLABORADOR: {cliente}", ln=True, align='L')
     pdf.cell(0, 5, txt=f"CPF: {cpf} | DATA: {data_formatada} | VÁLIDO ATÉ: {data_validade_formatada}", ln=True, align='L')
     pdf.ln(5)
 
     pdf.set_font("Arial", 'B', 8)
-    pdf.set_text_color(149, 6, 6)  
+    pdf.set_text_color(149, 6, 6)
     pdf.cell(140, 6, txt="Exames", border=1, align='C')
     pdf.cell(40, 6, txt="Valor", border=1, align='C', ln=True)
     pdf.set_font("Arial", size=8)
-    pdf.set_text_color(63, 23, 23)  
+    pdf.set_text_color(63, 23, 23)
 
-    total = 0
+    total = 0.0
     for exame in exames_selecionados:
-        pdf.cell(140, 6, txt=exame['nome'], border=1, align='L')
-        pdf.cell(40, 6, txt=f"R$ {exame['valor']}", border=1, align='C', ln=True)
-        total += float(exame['valor'])
+        nome = exame['nome']
+        valor_str = exame['valor'].replace(',', '.')
+        valor_float = float(valor_str)
+        total += valor_float
 
-    # 
+        pdf.cell(140, 6, txt=nome, border=1, align='L')
+        pdf.cell(40, 6, txt=f"R$ {valor_str.replace('.', ',')}", border=1, align='C', ln=True)
+
     pdf.set_font("Arial", 'B', 8)
     pdf.cell(140, 6, txt="Total", border=1, align='L')
-    pdf.cell(40, 6, txt=f"R$ {total:.2f}", border=1, align='C', ln=True)
+    pdf.cell(40, 6, txt=f"R$ {total:.2f}".replace('.', ','), border=1, align='C', ln=True)
     pdf.ln(5)
 
-    pdf.set_y(-30)  
+    pdf.set_y(-30)
     pdf.set_font("Arial", size=8)
-    pdf.set_text_color(149, 6, 6)  
+    pdf.set_text_color(149, 6, 6)
     pdf.cell(0, 5, txt="Obrigado pela preferência!", ln=True, align='C')
     pdf.ln(3)
-    pdf.set_font("Arial", 'I', 7)  
-    pdf.set_text_color(63, 23, 23)  
+    pdf.set_font("Arial", 'I', 7)
+    pdf.set_text_color(63, 23, 23)
     pdf.cell(0, 4, txt="Laboratório Holos", ln=True, align='C')
     pdf.cell(0, 4, txt="Avenida Doutor Galdino do Valle Filho, N 133, Centro, 28625-010, Nova Friburgo - RJ", ln=True, align='C')
     pdf.cell(0, 4, txt="(22)9 8837-0724 | @holoservicosmedicos", ln=True, align='C')
 
-    # Salvar e retornar o PDF
     pdf_output = f"orcamento_{cliente}.pdf"
     pdf.output(pdf_output)
 
     return send_file(pdf_output, as_attachment=True)
 
-from flask import send_file, request
-import csv
+
 
 @app.route('/exportar_csv')
 @login_required
