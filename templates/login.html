@@ -1,115 +1,23 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Login - Laboratório Holos</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f9f9f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-container {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            text-align: center;
-        }
-        .login-container h2 {
-            margin-bottom: 20px;
-            color: #950606;
-        }
-        .login-container input {
-            width: 100%;
-            padding: 10px;
-            margin-bottom: 10px;
-            border: 1px solid #FFB4B4;
-            border-radius: 4px;
-            font-size: 16px;
-        }
-        .login-container button {
-            background-color: #950606;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 16px;
-            width: 100%;
-        }
-        .login-container button:hover {
-            background-color: #3F1717;
-        }
-        .mensagem {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background-color: #950606;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/login.css') }}">
+    <link rel="icon" type="image/x-icon" href="{{ url_for('static', filename='favicon.ico') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500&display=swap" rel="stylesheet">
 </head>
 <body>
     <div class="login-container">
         <h2>Login</h2>
         <form id="form-login">
-            <input type="text" id="username" name="username" placeholder="Usuário" required>
-            <input type="password" id="senha" name="senha" placeholder="Senha" required>
+            <input type="text" id="username" name="username" placeholder="Usuário" required />
+            <input type="password" id="senha" name="senha" placeholder="Senha" required />
             <button type="submit">Entrar</button>
         </form>
     </div>
 
-    <script>
-        function mostrarMensagem(mensagem, tipo) {
-            const mensagemDiv = document.createElement('div');
-            mensagemDiv.className = 'mensagem';
-            mensagemDiv.textContent = mensagem;
-            mensagemDiv.style.backgroundColor = tipo === 'error' ? '#950606' : '#4CAF50'; // Vermelho para erro, verde para sucesso
-            document.body.appendChild(mensagemDiv);
-            setTimeout(() => mensagemDiv.remove(), 3000);
-        }
-
-        document.getElementById('form-login').addEventListener('submit', function(event) {
-            event.preventDefault();
-
-            const formData = new FormData(this); 
-
-            fetch('/login', {
-                method: 'POST',
-                body: formData,  
-            })
-            .then(response => {
-                if (response.ok) {
-                    return response.json();
-                } else {
-                    throw new Error('Erro ao tentar fazer login');
-                }
-            })
-            .then(data => {
-                if (data.status === 'success') {
-                    mostrarMensagem(data.message, 'success');
-                    setTimeout(() => {
-                        window.location.href = '/'; 
-                    }, 1000);
-                } else {
-                    mostrarMensagem(data.message, 'error');
-                }
-            })
-            .catch(error => {
-                mostrarMensagem('Erro ao tentar fazer login', 'error');
-            });
-        });
-    </script>
+    <script src="{{ url_for('static', filename='js/login.js') }}"></script>
 </body>
 </html>
