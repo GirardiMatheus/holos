@@ -1,46 +1,63 @@
 from flask import Flask, request, jsonify, redirect, url_for, render_template, session, send_file
-import bcrypt
+from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy.exc import IntegrityError
 from fpdf import FPDF
+from functools import wraps
+from datetime import datetime, timedelta
+import bcrypt
 import csv
 import os
-from functools import wraps
+import tempfile
 
 app = Flask(__name__)
-app.secret_key = 'sua_chave_secreta_aqui'  
+app.secret_key = 'sua_chave_secreta_aqui'
 
-usuarios = {
-    "velorin": {
-        "senha_hash": b'$2b$12$ZdDv3hl4F.XPV6xw6073J.PAjVAIuOhwAM/pLqF8fhERAXWlxVB3C', 
-    },
-    "r.souza": {
-        "senha_hash": b'$2b$12$GQDP2JRI8c/.Kx4IaOvl2e2f/j5ISGtOhz7EIL1IPJWAeXjkJa2/W',  
-    }
-}
+# Configuração do PostgreSQL
+app.config['SQLALCHEMY_DATABASE_URI'] = 'postgresql://postgres:postgres@db:5432/postgres'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
+db = SQLAlchemy(app)
+
+# MODELS
+class Usuario(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(80), unique=True, nullable=False)
+    senha_hash = db.Column(db.LargeBinary(128), nullable=False)
+
+class Exame(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    nome = db.Column(db.String(255), nullable=False)
+    valor = db.Column(db.String(50), nullable=False)
+
+# Decorator para login obrigatório
 def login_required(route):
-    @wraps(route)  
+    @wraps(route)
     def wrapper(*args, **kwargs):
         if 'username' not in session:
             return redirect(url_for('login'))
         return route(*args, **kwargs)
     return wrapper
 
+# ROTAS
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        username = request.form.get('username')  
+        username = request.form.get('username')
         senha = request.form.get('senha')
 
-        if username in usuarios:
-            senha_hash = usuarios[username]['senha_hash']
-
-            if bcrypt.checkpw(senha.encode('utf-8'), senha_hash):
-                session['username'] = username  
+        usuario = Usuario.query.filter_by(username=username).first()
+        if usuario:
+            # Converta o hash armazenado para bytes se necessário
+            stored_hash = usuario.senha_hash
+            if isinstance(stored_hash, str):
+                stored_hash = stored_hash.encode('utf-8')
+            
+            if bcrypt.checkpw(senha.encode('utf-8'), stored_hash):
+                session['username'] = username
                 return jsonify({"status": "success", "message": "Login realizado com sucesso!"})
-            else:
-                return jsonify({"status": "error", "message": "Senha incorreta"}), 401
-        else:
-            return jsonify({"status": "error", "message": "Usuário não encontrado"}), 404
+        
+        return jsonify({"status": "error", "message": "Credenciais inválidas"}), 401
 
     return render_template('login.html')
 
@@ -54,94 +71,70 @@ def logout():
 def index():
     return render_template('index.html')
 
-CSV_FILE = 'exames.csv'
-
-if not os.path.exists(CSV_FILE):
-    with open(CSV_FILE, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["Nome", "Valor"])
-
 @app.route('/exames', methods=['GET'])
 @login_required
 def listar_exames():
-    exames = []
-    with open(CSV_FILE, 'r') as file:
-        reader = csv.reader(file)
-        next(reader)  
-        for row in reader:
-            exames.append({"nome": row[0], "valor": row[1]})
-    return jsonify(exames)
+    exames = Exame.query.all()
+    return jsonify([{"nome": e.nome, "valor": e.valor} for e in exames])
 
 @app.route('/cadastrar', methods=['POST'])
 @login_required
 def cadastrar_exame():
-    nome = request.json.get('nome')
-    valor = request.json.get('valor')
-    with open(CSV_FILE, 'a', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow([nome, valor])
+    data = request.get_json()
+    if not data or 'nome' not in data or 'valor' not in data:
+        return jsonify({"status": "error", "message": "Dados inválidos"}), 400
+
+    exame = Exame(nome=data['nome'], valor=data['valor'])
+    db.session.add(exame)
+    db.session.commit()
     return jsonify({"status": "success"})
 
 @app.route('/editar_exame', methods=['POST'])
 @login_required
 def editar_exame():
-    nome_antigo = request.json.get('nomeAntigo')
-    nome_novo = request.json.get('nomeNovo')
-    valor = request.json.get('valor')
+    data = request.get_json()
+    if not data or 'nomeAntigo' not in data or 'nomeNovo' not in data or 'valor' not in data:
+        return jsonify({"status": "error", "message": "Dados incompletos"}), 400
 
-    exames = []
-    with open(CSV_FILE, 'r') as file:
-        reader = csv.reader(file)
-        exames = list(reader)
-
-    with open(CSV_FILE, 'w', newline='') as file:
-        writer = csv.writer(file)
-        for row in exames:
-            if row[0] == nome_antigo:
-                writer.writerow([nome_novo, valor])
-            else:
-                writer.writerow(row)
-
-    return jsonify({"status": "success"})
+    exame = Exame.query.filter_by(nome=data['nomeAntigo']).first()
+    if exame:
+        exame.nome = data['nomeNovo']
+        exame.valor = data['valor']
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "message": "Exame não encontrado"}), 404
 
 @app.route('/excluir_exame', methods=['POST'])
 @login_required
 def excluir_exame():
-    nome = request.json.get('nome')
+    data = request.get_json()
+    if not data or 'nome' not in data:
+        return jsonify({"status": "error", "message": "Nome não fornecido"}), 400
 
-    exames = []
-    with open(CSV_FILE, 'r') as file:
-        reader = csv.reader(file)
-        exames = list(reader)
-
-    with open(CSV_FILE, 'w', newline='') as file:
-        writer = csv.writer(file)
-        for row in exames:
-            if row[0] != nome:
-                writer.writerow(row)
-
-    return jsonify({"status": "success"})
+    exame = Exame.query.filter_by(nome=data['nome']).first()
+    if exame:
+        db.session.delete(exame)
+        db.session.commit()
+        return jsonify({"status": "success"})
+    return jsonify({"status": "error", "message": "Exame não encontrado"}), 404
 
 @app.route('/gerar_orcamento', methods=['POST'])
 @login_required
 def gerar_orcamento():
-    from datetime import datetime, timedelta
-    cliente = request.json.get('cliente')
-    cpf = request.json.get('cpf')
-    exames_selecionados = request.json.get('exames')
+    data = request.get_json()
+    cliente = data.get('cliente')
+    cpf = data.get('cpf')
+    exames_selecionados = data.get('exames')
 
-    data_atual = datetime.now()
-    data_formatada = data_atual.strftime("%d/%m/%Y")
-    data_validade = data_atual + timedelta(days=30)
-    data_validade_formatada = data_validade.strftime("%d/%m/%Y")
+    if not cliente or not cpf or not exames_selecionados:
+        return jsonify({"status": "error", "message": "Dados insuficientes"}), 400
 
     class PDF(FPDF):
         def __init__(self):
             super().__init__()
-            self.footer_height = 25  # Altura reservada para o rodapé
+            self.footer_height = 25
             
         def footer(self):
-            # Posiciona o rodapé na parte inferior
             self.set_y(-self.footer_height + 5)
             self.set_font("Arial", size=8)
             self.set_text_color(149, 6, 6)
@@ -154,9 +147,8 @@ def gerar_orcamento():
 
     pdf = PDF()
     pdf.add_page()
-    pdf.set_auto_page_break(auto=True, margin=pdf.footer_height)  # Reserva espaço para o rodapé
+    pdf.set_auto_page_break(auto=True, margin=pdf.footer_height)
     pdf.set_margins(left=10, top=10, right=10)
-    pdf.set_font("Arial", size=8)
 
     # Cabeçalho
     pdf.set_font("Arial", 'B', 12)
@@ -168,106 +160,100 @@ def gerar_orcamento():
     pdf.ln(5)
 
     pdf.set_font("Arial", 'B', 10)
-    pdf.set_text_color(149, 6, 6)
     pdf.cell(0, 6, txt="ORÇAMENTO", ln=True, align='C')
     pdf.ln(5)
 
     pdf.set_font("Arial", size=8)
-    pdf.set_text_color(63, 23, 23)
-    pdf.cell(0, 5, txt=f"COLABORADOR: {cliente}", ln=True, align='L')
-    pdf.cell(0, 5, txt=f"CPF: {cpf} | DATA: {data_formatada} | VÁLIDO ATÉ: {data_validade_formatada}", ln=True, align='L')
+    data_atual = datetime.now()
+    pdf.cell(0, 5, txt=f"COLABORADOR: {cliente}", ln=True)
+    pdf.cell(0, 5, txt=f"CPF: {cpf} | DATA: {data_atual.strftime('%d/%m/%Y')} | VÁLIDO ATÉ: {(data_atual + timedelta(days=30)).strftime('%d/%m/%Y')}", ln=True)
     pdf.ln(5)
 
-    # Tabela de exames
+    # Tabela
     pdf.set_font("Arial", 'B', 8)
     pdf.set_text_color(149, 6, 6)
-    pdf.cell(140, 6, txt="Exames", border=1, align='C')
-    pdf.cell(40, 6, txt="Valor", border=1, align='C', ln=True)
+    pdf.cell(140, 6, "Exames", border=1, align='C')
+    pdf.cell(40, 6, "Valor", border=1, align='C', ln=True)
     pdf.set_font("Arial", size=8)
     pdf.set_text_color(63, 23, 23)
 
     total = 0.0
     for exame in exames_selecionados:
-        # Verifica se precisa de nova página antes de adicionar linha
-        if pdf.get_y() + 6 > pdf.page_break_trigger - pdf.footer_height:
-            pdf.add_page()
-            # Repete o cabeçalho da tabela em novas páginas
-            pdf.set_font("Arial", 'B', 8)
-            pdf.set_text_color(149, 6, 6)
-            pdf.cell(140, 6, txt="Exames", border=1, align='C')
-            pdf.cell(40, 6, txt="Valor", border=1, align='C', ln=True)
-            pdf.set_font("Arial", size=8)
-            pdf.set_text_color(63, 23, 23)
-            
-        nome = exame['nome']
-        valor_str = exame['valor'].replace(',', '.')
-        valor_float = float(valor_str)
+        nome = exame.get('nome')
+        valor_str = exame.get('valor', '0').replace(',', '.')
+        try:
+            valor_float = float(valor_str)
+        except ValueError:
+            valor_float = 0.0
         total += valor_float
+        pdf.cell(140, 6, nome, border=1)
+        pdf.cell(40, 6, f"R$ {valor_float:.2f}".replace('.', ','), border=1, ln=True)
 
-        pdf.cell(140, 6, txt=nome, border=1, align='L')
-        pdf.cell(40, 6, txt=f"R$ {valor_str.replace('.', ',')}", border=1, align='C', ln=True)
-
-    # Linha do total - verifica se precisa de nova página
-    if pdf.get_y() + 6 > pdf.page_break_trigger - pdf.footer_height:
-        pdf.add_page()
     pdf.set_font("Arial", 'B', 8)
-    pdf.cell(140, 6, txt="Total", border=1, align='L')
-    pdf.cell(40, 6, txt=f"R$ {total:.2f}".replace('.', ','), border=1, align='C', ln=True)
-    pdf.ln(5)
+    pdf.cell(140, 6, "Total", border=1)
+    pdf.cell(40, 6, f"R$ {total:.2f}".replace('.', ','), border=1, ln=True)
 
-    pdf_output = f"orcamento_{cliente}.pdf"
-    pdf.output(pdf_output)
-
-    return send_file(pdf_output, as_attachment=True)
-
-
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
+        pdf.output(tmp.name)
+        return send_file(tmp.name, download_name=f"orcamento_{cliente}.pdf", as_attachment=True)
 
 @app.route('/exportar_csv')
 @login_required
 def exportar_csv():
-    csv_output = 'exames_exportados.csv'
-    with open(csv_output, 'w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["Nome", "Valor"])  
-        with open(CSV_FILE, 'r') as original_file:
-            reader = csv.reader(original_file)
-            next(reader) 
-            for row in reader:
-                writer.writerow(row)
-
-    return send_file(csv_output, as_attachment=True)
+    exames = Exame.query.all()
+    with tempfile.NamedTemporaryFile(mode='w+', delete=False, suffix=".csv", newline='', encoding='utf-8') as tmp:
+        writer = csv.writer(tmp)
+        writer.writerow(["Nome", "Valor"])
+        for e in exames:
+            writer.writerow([e.nome, e.valor])
+        tmp.flush()
+        return send_file(tmp.name, download_name="exames_exportados.csv", as_attachment=True)
 
 @app.route('/importar_csv', methods=['POST'])
 @login_required
 def importar_csv():
-    if 'file' not in request.files:
-        return jsonify({"status": "error", "message": "Nenhum arquivo enviado"}), 400
-
-    file = request.files['file']
-    if file.filename == '':
-        return jsonify({"status": "error", "message": "Nome do arquivo inválido"}), 400
-
-    if not file.filename.endswith('.csv'):
-        return jsonify({"status": "error", "message": "Formato de arquivo inválido"}), 400
+    file = request.files.get('file')
+    if not file or not file.filename.endswith('.csv'):
+        return jsonify({"status": "error", "message": "Arquivo inválido"}), 400
 
     try:
-        exames = []
-        reader = csv.reader(file.read().decode('utf-8').splitlines())
+        file_data = file.read().decode('utf-8').splitlines()
+        reader = csv.reader(file_data)
         next(reader)  
         for row in reader:
-            exames.append(row)
-
-        with open(CSV_FILE, 'w', newline='') as file:
-            writer = csv.writer(file)
-            writer.writerow(["Nome", "Valor"])  
-            writer.writerows(exames)
-
-        return jsonify({"status": "success", "message": "CSV importado com sucesso"})
+            db.session.add(Exame(nome=row[0], valor=row[1]))
+        db.session.commit()
+        return jsonify({"status": "success"})
     except Exception as e:
-        return jsonify({"status": "error", "message": str(e)}), 500
+        return jsonify({"status": "error", "message": f"Erro ao importar: {str(e)}"}), 500
 
+# Inicialização do banco
+with app.app_context():
+    db.create_all()
+    
+    # Limpa usuários existentes para evitar duplicatas
+    Usuario.query.delete()
+    
+    # Adiciona os usuários com os hashes gerados
+    usuarios = [
+        {
+            'username': 'velorin',
+            'senha_hash': b'$2b$12$2gYAxX0YXlZeq6FMKgSktOE5ezsxtMrJBtzJ26asBIeq0Drdh.FIy'  
+        },
+        {
+            'username': 'r.souza',
+            'senha_hash': b'$2b$12$dqO.B7Zs.EywgyjnH3xjYuMxZHb/Yur4JQYtj9WnOA77pI6mNxNJ2'  
+        }
+    ]
+    
+    for usuario in usuarios:
+        if not Usuario.query.filter_by(username=usuario['username']).first():
+            db.session.add(Usuario(
+                username=usuario['username'],
+                senha_hash=usuario['senha_hash']
+            ))
+    
+    db.session.commit()
 
 if __name__ == '__main__':
-    PORT = int(os.environ.get("PORT", 5000))
-
-    app.run(host="0.0.0.0", port=PORT)
+    app.run(host='0.0.0.0', port=5000, debug=True)

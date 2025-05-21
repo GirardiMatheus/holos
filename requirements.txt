@@ -15,3 +15,6 @@ zope.interface==7.2
 gunicorn==23.0.0
 fpdf
 bcrypt
+flask_sqlalchemy
+psycopg2-binary
+
