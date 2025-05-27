@@ -1,4 +1,8 @@
+import os
 from .. import db
+from dotenv import load_dotenv
+
+load_dotenv()  
 
 class Usuario(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -6,26 +10,25 @@ class Usuario(db.Model):
     senha_hash = db.Column(db.LargeBinary(128), nullable=False)
 
 def inicializar_usuarios():
-    # Limpa usuários existentes para evitar duplicatas
     Usuario.query.delete()
-    
-    # Adiciona os usuários com os hashes gerados
+
     usuarios = [
         {
-            'username': 'velorin',
-            'senha_hash': b'$2b$12$2gYAxX0YXlZeq6FMKgSktOE5ezsxtMrJBtzJ26asBIeq0Drdh.FIy'  
+            'username': os.getenv('USER_1_USERNAME'),
+            'senha_hash': os.getenv('USER_1_HASH').encode()  
         },
         {
-            'username': 'r.souza',
-            'senha_hash': b'$2b$12$dqO.B7Zs.EywgyjnH3xjYuMxZHb/Yur4JQYtj9WnOA77pI6mNxNJ2'  
+            'username': os.getenv('USER_2_USERNAME'),
+            'senha_hash': os.getenv('USER_2_HASH').encode()
         }
     ]
-    
+
     for usuario in usuarios:
-        if not Usuario.query.filter_by(username=usuario['username']).first():
-            db.session.add(Usuario(
-                username=usuario['username'],
-                senha_hash=usuario['senha_hash']
-            ))
-    
+        if usuario["username"] and usuario["senha_hash"]:  
+            if not Usuario.query.filter_by(username=usuario['username']).first():
+                db.session.add(Usuario(
+                    username=usuario['username'],
+                    senha_hash=usuario['senha_hash']
+                ))
+
     db.session.commit()

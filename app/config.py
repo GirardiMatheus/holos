@@ -1,7 +1,10 @@
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'sua_chave_secreta_aqui'
-    # SQLALCHEMY_DATABASE_URI = 'postgresql://postgres:postgres@db:5432/postgres'
-    SQLALCHEMY_DATABASE_URI = 'postgresql://holosdb_q7ws_user:N9tyzkJt3ArU5bsEvD2trrfphLhZsRM0@dpg-d0mt56d6ubrc73enkh0g-a/holosdb_q7ws'
+    SECRET_KEY = os.environ.get('SECRET_KEY') 
+    # SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL_DEV')
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL_PROD')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
