@@ -1,9 +1,7 @@
-<table>
-  <tr>
-    <td><img src="app/static/img/logo-holos.png" alt="Logo Laboratório Holos" height="80"/></td>
-    <td><h1>Laboratório Holos - Sistema de Gerenciamento de Exames e Orçamentos</h1></td>
-  </tr>
-</table>
+<div style="display: flex; align-items: center; gap: 10px;">
+  <img src="app/static/img/logo-holos.png" alt="Logo Laboratório Holos" style="height: 80px; width: 80px; object-fit: contain;">
+  <h1 style="margin: 0;">Laboratório Holos - Sistema de Gerenciamento de Exames e Orçamentos</h1>
+</div>
 
 Sistema web desenvolvido para o Laboratório Holos, com o objetivo de facilitar o gerenciamento de exames, gerar orçamentos em PDF e permitir importação/exportação de dados em CSV. A aplicação é segura, responsiva e baseada em autenticação de usuários.
 
